@@ -1,20 +1,33 @@
 """
 This is a demo app for getting a token for a user in a trusted authentication scenario.
 """
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 
+import argparse
 import logging
+import os
 import requests
 
 app = Flask(__name__)
 CORS(app=app)
 
+CONFIG_FILE = "gettoken.config"
+
 # constants for API usage.
-TS_IP = "embed-1-do-not-delete.thoughtspotdev.cloud"
+
+
+# cloud values
+# TS_URL = "embed-1-do-not-delete.thoughtspotdev.cloud"
+# TS_USER = "tsadmin"
+# TS_PASSWORD = "Embedtest123%"
+# SECRET_KEY="e025d68e-4018-4fec-9120-e757c7b63d26"
+
+# 6.3 values
+TS_URL = "10.85.78.97"
 TS_USER = "tsadmin"
-TS_PASSWORD = "Embedtest123%"
-SECRET_KEY="e025d68e-4018-4fec-9120-e757c7b63d26"
+TS_PASSWORD = "CSts!135adm"
+SECRET_KEY = "25af080c-1239-4080-918d-3ecdc7221af4"
 
 LOGIN_API = "callosum/v1/tspublic/v1/session/login"
 
@@ -24,14 +37,41 @@ ACCESS_LEVEL = "FULL"
 _log = logging.getLogger(__name__)
 
 
+class InvalidUsage(Exception):
+    """
+    Class to provide an error if an API is called incorrectly.
+    Taken from Flask documentation: https://flask.palletsprojects.com/en/1.1.x/patterns/apierrors/
+    """
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    """Handles thrown exceptions."""
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+
 class GetAuthToken:
     """Manges getting an authentication token for a user."""
 
-    def __init__(self):
+    def __init__(self, config):
         # TODO add parameters instead of constants.
-        self.tsurl = TS_IP
-        self.username = TS_USER
-        self.password = TS_PASSWORD
+        self.tsurl = config["ts-url"]
+        self.username = config["ts-username"]
+        self.password = config["ts-password"]
         self.cookies = None
 
         self.session = requests.Session()
@@ -81,8 +121,9 @@ class GetAuthToken:
             try:
                 self._login()
             except requests.exceptions.ConnectionError as ce:
-                _log.error("Unable to log in.")
-                return "Error accessing the ThoughtSpot cluster.  Check the cluster status and login details."
+                _log.error(f"Unable to log in: {ce}")
+                raise InvalidUsage(message="Error accessing the ThoughtSpot cluster.  "
+                                            "Check the cluster status and login details.")
 
         url = self._get_token_url()
         data = {
@@ -98,24 +139,48 @@ class GetAuthToken:
             error_msg = f"[{response.status_code}]: {response.text}"
             _log.error(error_msg)
 
-            return error_msg
+            raise InvalidUsage(message=error_msg)
 
         return response.text
 
 
-get_auth_token = GetAuthToken()
+def read_config():
+    """Reads the values from the config file and sets in config."""
+
+    if not os.path.exists(CONFIG_FILE):
+        print(f"Can't find configuration file {CONFIG_FILE}")
+        exit(-1)
+
+    with open(CONFIG_FILE, "r") as config_file:
+        for line in config_file.readlines():
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+
+            if "=" in line:
+                config_token = line.split("=")
+                app.config[config_token[0].strip()] = config_token[1].strip()
+
+    print(app.config)
+    return app.config
+
+
+def get_auth_token():
+    return GetAuthToken(read_config())
 
 
 @app.route('/')
 def index():
-    return 'Use /gettoken/<username>'
+    raise InvalidUsage(message='Use /gettoken/<username>, where <username> is a valid TS user.')
 
 
 @app.route("/gettoken/<username>", methods=["GET"])
 def get_token(username: str) -> str:
     """Gets a token for the given user name."""
-    return get_auth_token.get_token(username=username)
+    read_config()  # will always use the latest config.
+    return get_auth_token().get_token(username=username)
 
 
 if __name__ == '__main__':
+    print("starting app")
     app.run(host='0.0.0.0')
