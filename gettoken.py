@@ -15,26 +15,13 @@ CORS(app=app)
 CONFIG_FILE = "gettoken.config"
 
 # constants for API usage.
-
-
-# cloud values
-# TS_URL = "embed-1-do-not-delete.thoughtspotdev.cloud"
-# TS_USER = "tsadmin"
-# TS_PASSWORD = "Embedtest123%"
-# SECRET_KEY="e025d68e-4018-4fec-9120-e757c7b63d26"
-
-# 6.3 values
-TS_URL = "10.85.78.97"
-TS_USER = "tsadmin"
-TS_PASSWORD = "CSts!135adm"
-SECRET_KEY = "25af080c-1239-4080-918d-3ecdc7221af4"
-
 LOGIN_API = "callosum/v1/tspublic/v1/session/login"
 
 TOKEN_API = "callosum/v1/session/auth/token"
 ACCESS_LEVEL = "FULL"
 
 _log = logging.getLogger(__name__)
+_log.setLevel(logging.INFO)
 
 
 class InvalidUsage(Exception):
@@ -72,6 +59,7 @@ class GetAuthToken:
         self.tsurl = config["ts-url"]
         self.username = config["ts-username"]
         self.password = config["ts-password"]
+        self.secret_key = config["ts-secret"]
         self.cookies = None
 
         self.session = requests.Session()
@@ -113,9 +101,11 @@ class GetAuthToken:
         """Returns true if the session is authenticated"""
         return self.cookies is not None
 
-    def get_token(self, username: str) -> str:
+    def get_token(self, secret: str, username: str) -> str:
         """
         Gets a token for the user with the username.
+        :param secret: The secret key for the cluster.
+        :param username: The username to get the token for.
         """
         if not self.is_authenticated():
             try:
@@ -127,7 +117,7 @@ class GetAuthToken:
 
         url = self._get_token_url()
         data = {
-            "secret_key": SECRET_KEY,
+            "secret_key": secret,
             "username": username,
             "access_level": "FULL"
         }
@@ -148,20 +138,19 @@ def read_config():
     """Reads the values from the config file and sets in config."""
 
     if not os.path.exists(CONFIG_FILE):
-        print(f"Can't find configuration file {CONFIG_FILE}")
+        _log.error(f"Can't find configuration file {CONFIG_FILE}")
         exit(-1)
 
     with open(CONFIG_FILE, "r") as config_file:
         for line in config_file.readlines():
-            line = line.strip()
-            if line.startswith('#'):
-                continue
+            line = line.split("#")[0]  # strip off comments.
+            line = line.strip()  # get rid of any extra spaces at the ends.
 
             if "=" in line:
                 config_token = line.split("=")
                 app.config[config_token[0].strip()] = config_token[1].strip()
 
-    print(app.config)
+    _log.info(app.config)
     return app.config
 
 
@@ -178,9 +167,9 @@ def index():
 def get_token(username: str) -> str:
     """Gets a token for the given user name."""
     read_config()  # will always use the latest config.
-    return get_auth_token().get_token(username=username)
+    return get_auth_token().get_token(secret=app.config["ts-secret"], username=username)
 
 
 if __name__ == '__main__':
-    print("starting app")
+    _log.info("starting app")
     app.run(host='0.0.0.0')
