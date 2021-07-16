@@ -43,6 +43,7 @@ class InvalidUsage(Exception):
         rv['message'] = self.message
         return rv
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     """Handles thrown exceptions."""
@@ -113,7 +114,7 @@ class GetAuthToken:
             except requests.exceptions.ConnectionError as ce:
                 _log.error(f"Unable to log in: {ce}")
                 raise InvalidUsage(message="Error accessing the ThoughtSpot cluster.  "
-                                            "Check the cluster status and login details.")
+                                   "Check the cluster status and login details.")
 
         url = self._get_token_url()
         data = {
