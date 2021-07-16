@@ -18,6 +18,8 @@ The service will grant FULL access to whatever the user has permissions to acces
 
 ## Deploy and Configure
 
+Before using Trusted Authentication, you need to enable it.  This can be done from the Developer Security Settings as described in the [Documentation](https://cloud-docs.thoughtspot.com/admin/ts-cloud/trusted-authentication.html)
+
 This service should be deployed to an environment that is
 
 1. Accessible to the embedding application that will need to use token authentication
