@@ -1,6 +1,8 @@
 # Get Token Service
 
-This project is a simple Flask service that will act as a trusted authentication server for ThoughtSpot.
+This project is a simple Flask service that will act as a trusted authentication service for ThoughtSpot.  
+
+*__This service is intended as an example and not a product-ready solution.  In particular, it only demonstrates the use of the ThoughtSpot API.  In a production solution you would need to verify that the request was from a valid source, and the user is authenticated in your application to avoid calls on behalf of other users.__*
 
 Calls to the service are in the form of `https://<URL>:5000/gettoken/<username>`
 where:
