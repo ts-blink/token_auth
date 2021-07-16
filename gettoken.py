@@ -4,7 +4,6 @@ This is a demo app for getting a token for a user in a trusted authentication sc
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-import argparse
 import logging
 import os
 import requests
