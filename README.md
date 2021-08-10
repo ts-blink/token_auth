@@ -39,10 +39,9 @@ You should now be able to run `bash start_flask.sh` to start the server.  The se
 
 ## Notes
 
-* If the server or login change, the code has to be updated.
 * The user must exist on the target ThoughtSpot server, or you will get an error.
-* Passwords aren't currently supported, so as long as the user is known a valid token will be returned.  In production environments you would authenticate the user in the embedding application.
-* All users current get FULL access.
+* Passwords aren't supported, so as long as the user exists, a valid token will be returned.  In production environments you would authenticate the user in the embedding application.
+* All users get FULL access.
 
 ## Contact
 Primary author is [Bill Back](https://github.com/billdback-ts)
